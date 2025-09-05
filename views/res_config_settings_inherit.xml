@@ -7,13 +7,13 @@
         <field name="arch" type="xml">
             <xpath expr="//block[@name='catalog_setting_container']" position="after">
                 <block title="RFQ Confirmation Allowed Levels" name="rfq_levels_confirmations">
-                    <setting string="Level One User Limit" help="Set the limit for Level One approvals" id="level_one_limit">
+                    <setting string="Level One User Limit" help="Set the RFQ total amount limit for Level One approval" id="level_one_limit">
                         <field name="level_one_limit"/>
                     </setting>
-                    <setting string="Level Two User Limit" help="Set the limit for Level Two approvals" id="level_two_limit">
+                    <setting string="Level Two User Limit" help="Set the RFQ total amount limit for Level Two approval" id="level_two_limit">
                         <field name="level_two_limit"/>
                     </setting>
-                    <setting string="Level Three User Limit" help="Set the limit for Level Three approvals" id="level_three_limit">
+                    <setting string="Level Three User Limit" help="Set the RFQ total amount limit for Level Three approval" id="level_three_limit">
                         <field name="level_three_limit"/>
                     </setting>
                 </block>
