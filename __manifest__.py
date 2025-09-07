@@ -11,6 +11,7 @@
         'sale',
     ],
     'data': [
+        'security/security.xml',
         'views/res_config_settings_inherit.xml',
     ],
     'auto_install': False,
