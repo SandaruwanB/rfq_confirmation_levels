@@ -1,66 +1,64 @@
-from odoo import models
-from odoo.exceptions import UserError
-import logging
-
-_logger = logging.getLogger(__name__)
-
+from odoo import models, _
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    # override exiting confirm button method
     def action_confirm(self):
-        # Get current user
-        current_user = self.env.user
-        
-        # Define approval level groups to check (in order from highest to lowest)
-        approval_groups = [
-            ('rfq_confirmation_levels.group_sales_quotation_level_four_approver', 4, 'Level 4 Approver'),
-            ('rfq_confirmation_levels.group_sales_quotation_level_three_approver', 3, 'Level 3 Approver'),
-            ('rfq_confirmation_levels.group_sales_quotation_level_two_approver', 2, 'Level 2 Approver'),
-            ('rfq_confirmation_levels.group_sales_quotation_level_one_approver', 1, 'Level 1 Approver'),
-        ]
-        
-        # Find the user's approval level (should be only one now)
-        user_approval_level = None
-        user_approval_group_name = None
-        
-        for group_xml_id, level, group_name in approval_groups:
-            if current_user.has_group(group_xml_id):
-                user_approval_level = level
-                user_approval_group_name = group_name
-                break  # Take the first (highest) level found
-        
-        # Print the results
-        print(f"\n=== Sales Quotation Approval Level Check ===")
-        print(f"User: {current_user.name} (ID: {current_user.id})")
-        print(f"Sale Order: {self.name}")
-        print(f"Order Amount: {self.amount_total}")
-        
-        if user_approval_level:
-            print(f"User's Approval Level: {user_approval_group_name} (Level {user_approval_level})")
-            _logger.info(f"User {current_user.name} has approval level: {user_approval_level}")
+        approval_result = self._check_approval()
+
+        if isinstance(approval_result, dict) and approval_result.get('type') == 'ir.actions.client':
+            return approval_result
+
+        if not approval_result:
+            return False
+
+        return super(SaleOrder, self).action_confirm()
+    
+
+    # approval leves and amount limitations check
+    def _check_approval(self):
+        user_approval_level = self._get_user_approval_level()
+        limits = self._get_value_limits()
+        current_order_amount = self.amount_total
+
+        if user_approval_level is None:
+            message = _("You don't have approval permissions. Please contact the administrator.")
+            return self._show_toast_message(message, 'warning')
             
-            # You can add approval logic here based on amount thresholds
-            # Example:
-            # if self.amount_total > 10000 and user_approval_level < 3:
-            #     raise UserError("This order requires Level 3 or higher approval")
-            
-        else:
-            print("User has NO approval level groups assigned")
-            _logger.info(f"User {current_user.name} has no approval level groups assigned")
+        elif user_approval_level == 1:
+            if current_order_amount > limits['level_one_limit']:
+                message = _("Order amount (%.2f) exceeds your Level 1 approval limit (%.2f). Please contact a higher-level approver.") % (current_order_amount, limits['level_one_limit'])
+                return self._show_toast_message(message, 'warning')
+                
+        elif user_approval_level == 2:
+            if current_order_amount > limits['level_two_limit']:
+                message = _("Order amount (%.2f) exceeds your Level 2 approval limit (%.2f). Please contact a higher-level approver.") % (current_order_amount, limits['level_two_limit'])
+                return self._show_toast_message(message, 'warning')
+                
+        elif user_approval_level == 3:
+            if current_order_amount > limits['level_three_limit']:
+                message = _("Order amount (%.2f) exceeds your Level 3 approval limit (%.2f). Please contact a Level 4 approver.") % (current_order_amount, limits['level_three_limit'])
+                return self._show_toast_message(message, 'warning')
         
-        print("=" * 45)
+        return True
+
+
+    # get value limit from the settings
+    def _get_value_limits(self):
+        ir_config = self.env['ir.config_parameter'].sudo()
         
-        # Call the original action_confirm method
-        # return super(SaleOrder, self).action_confirm()
+        limits = {
+            'level_one_limit': float(ir_config.get_param('rfq_confirmation_levels.level_one_limit', 0.0)),
+            'level_two_limit': float(ir_config.get_param('rfq_confirmation_levels.level_two_limit', 0.0)),
+            'level_three_limit': float(ir_config.get_param('rfq_confirmation_levels.level_three_limit', 0.0)),
+        }
+        
+        return limits
 
-    def _get_approval_status(self):
-        pass
 
-    def _set_approval_status(self):
-        pass
-
-    def _check_user_approval_level(self):
+    # get current user approval level
+    def _get_user_approval_level(self):
         current_user = self.env.user
         approval_groups = [
             ('rfq_confirmation_levels.group_sales_quotation_level_four_approver', 4),
@@ -73,3 +71,17 @@ class SaleOrder(models.Model):
             if current_user.has_group(group_xml_id):
                 return level
         return None
+        
+
+    # Toast notification to user
+    def _show_toast_message(self, message, message_type='info'):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Approval Required'),
+                'message': message,
+                'type': message_type,
+                'sticky': False,
+            }
+        }
