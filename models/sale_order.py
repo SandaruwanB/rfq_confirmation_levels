@@ -2,6 +2,7 @@ from odoo import models, _
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+    
 
     # override exiting confirm button method
     def action_confirm(self):
