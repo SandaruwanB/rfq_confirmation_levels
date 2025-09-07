@@ -23,22 +23,22 @@ class SaleOrder(models.Model):
         current_order_amount = self.amount_total
 
         if user_approval_level is None:
-            message = _("You don't have approval permissions. Please contact the administrator.")
+            message = _("You don't have permissions. Please contact the administrator.")
             return self._show_toast_message(message, 'warning')
             
         elif user_approval_level == 1:
             if current_order_amount > limits['level_one_limit']:
-                message = _("Order amount (%.2f) exceeds your Level 1 approval limit (%.2f). Please contact a higher-level approver.") % (current_order_amount, limits['level_one_limit'])
+                message = _("Order amount (%.2f) exceeds your approval limit (%.2f).") % (current_order_amount, limits['level_one_limit'])
                 return self._show_toast_message(message, 'warning')
                 
         elif user_approval_level == 2:
             if current_order_amount > limits['level_two_limit']:
-                message = _("Order amount (%.2f) exceeds your Level 2 approval limit (%.2f). Please contact a higher-level approver.") % (current_order_amount, limits['level_two_limit'])
+                message = _("Order amount (%.2f) exceeds your approval limit (%.2f).") % (current_order_amount, limits['level_two_limit'])
                 return self._show_toast_message(message, 'warning')
                 
         elif user_approval_level == 3:
             if current_order_amount > limits['level_three_limit']:
-                message = _("Order amount (%.2f) exceeds your Level 3 approval limit (%.2f). Please contact a Level 4 approver.") % (current_order_amount, limits['level_three_limit'])
+                message = _("Order amount (%.2f) exceeds your approval limit (%.2f).") % (current_order_amount, limits['level_three_limit'])
                 return self._show_toast_message(message, 'warning')
         
         return True
@@ -79,7 +79,7 @@ class SaleOrder(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Approval Required'),
+                'title': _('Confirmation Denied'),
                 'message': message,
                 'type': message_type,
                 'sticky': False,
