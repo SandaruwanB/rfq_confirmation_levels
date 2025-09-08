@@ -7,13 +7,15 @@ class SaleOrder(models.Model):
         string="Can Confirm Order",
         compute="_compute_can_confirm_order",
     )
-    
+
     
     @api.depends('amount_total', 'state')
     def _compute_can_confirm_order(self):
         for order in self:
             order.can_confirm_order = order._can_user_confirm_order()
     
+
+    # check user level and allow or disallow confirm button
     def _can_user_confirm_order(self):
         user_approval_level = self._get_user_approval_level()
         limits = self._get_value_limits()
@@ -46,7 +48,7 @@ class SaleOrder(models.Model):
         return super(SaleOrder, self).action_confirm()
     
 
-    # approval leves and amount limitations check before confirm the order
+    # approval leves and amount limitations check before confirm the order (This hapens when confirm button is bugged and visible)
     def _check_approval(self):
         user_approval_level = self._get_user_approval_level()
         limits = self._get_value_limits()
