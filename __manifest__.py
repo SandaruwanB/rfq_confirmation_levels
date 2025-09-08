@@ -13,6 +13,7 @@
     'data': [
         'security/security.xml',
         'views/res_config_settings_inherit.xml',
+        'views/sale_order_form_inherit.xml',
     ],
     'auto_install': False,
     'application': False,

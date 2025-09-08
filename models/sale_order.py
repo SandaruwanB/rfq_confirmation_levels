@@ -1,8 +1,37 @@
-from odoo import models, _
+from odoo import models, fields, api, _
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
     
+    can_confirm_order = fields.Boolean(
+        string="Can Confirm Order",
+        compute="_compute_can_confirm_order",
+    )
+    
+    
+    @api.depends('amount_total', 'state')
+    def _compute_can_confirm_order(self):
+        for order in self:
+            order.can_confirm_order = order._can_user_confirm_order()
+    
+    def _can_user_confirm_order(self):
+        user_approval_level = self._get_user_approval_level()
+        limits = self._get_value_limits()
+        current_order_amount = self.amount_total
+
+        if user_approval_level is None:
+            return False
+        if user_approval_level == 1:
+            return current_order_amount <= limits['level_one_limit']
+        elif user_approval_level == 2:
+            return current_order_amount <= limits['level_two_limit']
+        elif user_approval_level == 3:
+            return current_order_amount <= limits['level_three_limit']
+        elif user_approval_level == 4:
+            return True
+            
+        return False
+
 
     # override exiting confirm button method
     def action_confirm(self):
@@ -17,7 +46,7 @@ class SaleOrder(models.Model):
         return super(SaleOrder, self).action_confirm()
     
 
-    # approval leves and amount limitations check
+    # approval leves and amount limitations check before confirm the order
     def _check_approval(self):
         user_approval_level = self._get_user_approval_level()
         limits = self._get_value_limits()
