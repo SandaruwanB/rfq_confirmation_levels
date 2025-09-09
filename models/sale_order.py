@@ -93,3 +93,45 @@ class SaleOrder(models.Model):
                 'sticky': False,
             }
         }
+    
+    def approve_and_confirm_order(self):
+        """Method to approve and confirm the order - can be called from activities"""
+        user_approval_level = self._get_user_approval_level()
+        limits = self._get_value_limits()
+        current_order_amount = self.amount_total
+        
+        # Check if user has sufficient approval level
+        can_approve = False
+        if user_approval_level == 1 and current_order_amount <= limits['level_one_limit']:
+            can_approve = True
+        elif user_approval_level == 2 and current_order_amount <= limits['level_two_limit']:
+            can_approve = True
+        elif user_approval_level == 3 and current_order_amount <= limits['level_three_limit']:
+            can_approve = True
+        elif user_approval_level == 4:
+            can_approve = True
+        
+        if can_approve:
+            # Post approval message in chatter
+            self.message_post(
+                body=_("Order approved and confirmed by %s (Level %s Approver)") % (self.env.user.name, user_approval_level),
+                message_type='notification',
+                subtype_xmlid='mail.mt_note'
+            )
+            
+            # Mark related activities as done
+            activities = self.env['mail.activity'].search([
+                ('res_id', '=', self.id),
+                ('res_model', '=', 'sale.order'),
+                ('user_id', '=', self.env.user.id),
+                ('activity_type_id.name', '=', 'RFQ Approval')
+            ])
+            activities.action_feedback(feedback=_("Order approved and confirmed"))
+            
+            # Confirm the order
+            return super(SaleOrder, self).action_confirm()
+        else:
+            return self._show_toast_message(
+                _("You don't have sufficient approval level for this order amount."), 
+                'warning'
+            )
