@@ -4,17 +4,13 @@
         <field name="name">sale.order.form.inherit.rfq.confirmation</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='state']" position="after">
-                <field name="can_confirm_order" invisible="1"/>
-            </xpath>
-            
+        <field name="arch" type="xml">           
             <xpath expr="//button[@name='action_confirm'][1]" position="attributes">
-                <attribute name="invisible">not can_confirm_order or state not in ('sent')</attribute>
+                <attribute name="invisible">state not in ('sent')</attribute>
             </xpath>
 
             <xpath expr="//button[@name='action_confirm'][2]" position="attributes">
-                <attribute name="invisible">not can_confirm_order or state not in ('draft')</attribute>
+                <attribute name="invisible">state not in ('draft')</attribute>
             </xpath>
         </field>
     </record>

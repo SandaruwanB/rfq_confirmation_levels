@@ -2,50 +2,29 @@ from odoo import models, fields, api, _
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
-    
-    can_confirm_order = fields.Boolean(
-        string="Can Confirm Order",
-        compute="_compute_can_confirm_order",
-    )
-
-    
-    @api.depends('amount_total', 'state')
-    def _compute_can_confirm_order(self):
-        for order in self:
-            order.can_confirm_order = order._can_user_confirm_order()
-    
-
-    # check user level and allow or disallow confirm button
-    def _can_user_confirm_order(self):
-        user_approval_level = self._get_user_approval_level()
-        limits = self._get_value_limits()
-        current_order_amount = self.amount_total
-
-        if user_approval_level is None:
-            return False
-        if user_approval_level == 1:
-            return current_order_amount <= limits['level_one_limit']
-        elif user_approval_level == 2:
-            return current_order_amount <= limits['level_two_limit']
-        elif user_approval_level == 3:
-            return current_order_amount <= limits['level_three_limit']
-        elif user_approval_level == 4:
-            return True
-            
-        return False
-
 
     # override exiting confirm button method
     def action_confirm(self):
-        approval_result = self._check_approval()
+        if self._check_approval():
+            return self._open_approval_wizard()
 
-        if isinstance(approval_result, dict) and approval_result.get('type') == 'ir.actions.client':
-            return approval_result
+        return super(SaleOrder, self).action_confirm()        
 
-        if not approval_result:
-            return False
 
-        return super(SaleOrder, self).action_confirm()
+    # open the wizard to inform user and send request to next approval level
+    def _open_approval_wizard(self):
+        wizard = self.env['rfq.confirm.wizard'].create({
+            'sales_order_id': self.id,
+        })
+        
+        return {
+            'name': _('RFQ Approval'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'rfq.confirm.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
     
 
     # approval leves and amount limitations check before confirm the order (This hapens when confirm button is bugged and visible)
@@ -60,20 +39,17 @@ class SaleOrder(models.Model):
             
         elif user_approval_level == 1:
             if current_order_amount > limits['level_one_limit']:
-                message = _("Order amount (%.2f) exceeds your approval limit (%.2f).") % (current_order_amount, limits['level_one_limit'])
-                return self._show_toast_message(message, 'warning')
+                return True
                 
         elif user_approval_level == 2:
             if current_order_amount > limits['level_two_limit']:
-                message = _("Order amount (%.2f) exceeds your approval limit (%.2f).") % (current_order_amount, limits['level_two_limit'])
-                return self._show_toast_message(message, 'warning')
-                
+                return True
+
         elif user_approval_level == 3:
             if current_order_amount > limits['level_three_limit']:
-                message = _("Order amount (%.2f) exceeds your approval limit (%.2f).") % (current_order_amount, limits['level_three_limit'])
-                return self._show_toast_message(message, 'warning')
+                return True
         
-        return True
+        return False
 
 
     # get value limit from the settings

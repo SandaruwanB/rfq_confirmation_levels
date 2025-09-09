@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <record id="rfq_confirm_wizard_form_view" model="ir.ui.view">
+        <field name="name">rfq.confirm.wizard.form</field>
+        <field name="model">rfq.confirm.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="sales_order_id" readonly="1" options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                    <group>
+                        <p>You can't confirm this order. Please click on "Send Approval Request" to send request for next approval user(s).</p>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="pass_to_approval_level" type="object" string="Send Approval Request" class="oe_highlight"/>
+                    <button string="Cancel" class="btn-default" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="rfq_confirmation_wizard_action" model="ir.actions.act_window">
+        <field name="name">RFQ Approval</field>
+        <field name="res_model">rfq.confirm.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="rfq_confirm_wizard_form_view"/>
+        <field name="target">new</field>
+    </record>
+</odoo>

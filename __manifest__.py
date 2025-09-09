@@ -11,7 +11,9 @@
         'sale',
     ],
     'data': [
+        'security/ir.model.access.csv',
         'security/security.xml',
+        'views/rfq_confirm_wizard.xml',
         'views/res_config_settings_inherit.xml',
         'views/sale_order_form_inherit.xml',
     ],
