@@ -95,7 +95,6 @@ class SaleOrder(models.Model):
         }
     
     def approve_and_confirm_order(self):
-        """Method to approve and confirm the order - can be called from activities"""
         user_approval_level = self._get_user_approval_level()
         limits = self._get_value_limits()
         current_order_amount = self.amount_total
